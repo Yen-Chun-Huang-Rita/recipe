@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>雁君的食譜庫</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;500&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #fdf6ec;
+    --warm-white: #fffdf8;
+    --terracotta: #c4614a;
+    --terracotta-light: #e8907c;
+    --terracotta-dark: #9e4535;
+    --sage: #7a9e7e;
+    --sage-light: #b5cdb7;
+    --charcoal: #2c2c2c;
+    --warm-gray: #8a8278;
+    --border: #e8ddd0;
+    --gold: #c9973a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--cream);
+    color: var(--charcoal);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--charcoal);
+    color: var(--cream);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+  }
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.8rem;
+    letter-spacing: 0.02em;
+    color: var(--cream);
+  }
+  .logo span { color: var(--terracotta-light); }
+  .header-actions { display: flex; gap: 12px; align-items: center; }
+
+  /* LAYOUT */
+  .app { display: flex; min-height: calc(100vh - 64px); }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--warm-white);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    position: sticky;
+    top: 64px;
+    height: calc(100vh - 64px);
+    overflow-y: auto;
+  }
+  .sidebar-section { margin-bottom: 8px; }
+  .sidebar-label {
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--warm-gray);
+    padding: 8px 24px 4px;
+  }
+  .category-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.9rem;
+    color: var(--charcoal);
+    text-align: left;
+    transition: all 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .category-btn:hover { background: rgba(196,97,74,0.08); }
+  .category-btn.active {
+    background: rgba(196,97,74,0.12);
+    border-left-color: var(--terracotta);
+    color: var(--terracotta-dark);
+    font-weight: 500;
+  }
+  .cat-icon { font-size: 1.1rem; width: 20px; text-align: center; }
+  .cat-count {
+    margin-left: auto;
+    background: var(--border);
+    color: var(--warm-gray);
+    font-size: 0.7rem;
+    padding: 1px 7px;
+    border-radius: 10px;
+  }
+  .category-btn.active .cat-count {
+    background: var(--terracotta);
+    color: white;
+  }
+
+  /* MAIN */
+  .main { flex: 1; padding: 32px; max-width: 100%; overflow: hidden; }
+
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .toolbar-left { display: flex; align-items: center; gap: 16px; }
+  .page-title {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--charcoal);
+  }
+  .recipe-count {
+    font-size: 0.8rem;
+    color: var(--warm-gray);
+    background: var(--border);
+    padding: 3px 10px;
+    border-radius: 12px;
+  }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    flex: 1;
+    max-width: 320px;
+    transition: border-color 0.2s;
+  }
+  .search-box:focus-within { border-color: var(--terracotta); }
+  .search-box input {
+    border: none;
+    outline: none;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.9rem;
+    background: transparent;
+    width: 100%;
+    color: var(--charcoal);
+  }
+  .search-icon { color: var(--warm-gray); font-size: 0.9rem; }
+
+  .btn-primary {
+    background: var(--terracotta);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { background: var(--terracotta-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(196,97,74,0.3); }
+
+  .btn-secondary {
+    background: white;
+    color: var(--charcoal);
+    border: 1.5px solid var(--border);
+    padding: 9px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--terracotta); color: var(--terracotta); }
+
+  /* RECIPE GRID */
+  .recipe-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .recipe-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .recipe-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+    border-color: var(--terracotta-light);
+  }
+
+  .card-photo {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    background: linear-gradient(135deg, var(--sage-light), var(--terracotta-light));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-photo img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
+  .card-cat-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(44,44,44,0.8);
+    color: white;
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border-radius: 12px;
+    backdrop-filter: blur(4px);
+  }
+  .card-cal-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(201,151,58,0.9);
+    color: white;
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 500;
+  }
+
+  .card-body { padding: 16px; }
+  .card-title {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+  .card-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 0.78rem;
+    color: var(--warm-gray);
+  }
+  .card-meta span { display: flex; align-items: center; gap: 4px; }
+  .card-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .tag {
+    background: var(--cream);
+    color: var(--warm-gray);
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--warm-gray);
+  }
+  .empty-state .icon { font-size: 4rem; margin-bottom: 16px; }
+  .empty-state h3 { font-family: 'Noto Serif TC', serif; font-size: 1.3rem; margin-bottom: 8px; color: var(--charcoal); }
+  .empty-state p { font-size: 0.9rem; margin-bottom: 20px; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20,20,20,0.6);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--warm-white);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 720px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 28px 0;
+    position: sticky;
+    top: 0;
+    background: var(--warm-white);
+    z-index: 10;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-title {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    cursor: pointer;
+    color: var(--warm-gray);
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.15s;
+  }
+  .modal-close:hover { background: var(--border); color: var(--charcoal); }
+
+  .modal-body { padding: 24px 28px; }
+
+  /* FORM */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-full { grid-column: 1 / -1; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--charcoal);
+    letter-spacing: 0.02em;
+  }
+  .form-input, .form-select, .form-textarea {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.9rem;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: white;
+    color: var(--charcoal);
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--terracotta);
+  }
+  .form-textarea { resize: vertical; min-height: 100px; }
+
+  /* PHOTO UPLOAD */
+  .photo-upload {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+    position: relative;
+  }
+  .photo-upload:hover { border-color: var(--terracotta); background: rgba(196,97,74,0.03); }
+  .photo-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .photo-upload .upload-icon { font-size: 2rem; margin-bottom: 8px; }
+  .photo-upload p { font-size: 0.85rem; color: var(--warm-gray); }
+  .photo-upload strong { color: var(--terracotta); }
+  .photo-preview {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .preview-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+  .preview-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(44,44,44,0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* INGREDIENTS */
+  .ingredients-list { display: flex; flex-direction: column; gap: 8px; }
+  .ingredient-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 8px;
+    align-items: center;
+  }
+  .btn-icon {
+    background: none;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    width: 34px;
+    height: 34px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    transition: all 0.15s;
+    color: var(--warm-gray);
+  }
+  .btn-icon:hover { border-color: var(--terracotta); color: var(--terracotta); }
+  .btn-add-row {
+    background: none;
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    width: 100%;
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.85rem;
+    color: var(--warm-gray);
+    transition: all 0.2s;
+    margin-top: 4px;
+  }
+  .btn-add-row:hover { border-color: var(--terracotta); color: var(--terracotta); background: rgba(196,97,74,0.04); }
+
+  /* CALORIE SECTION */
+  .calorie-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .cal-card {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+  .cal-card.main-cal {
+    border-color: var(--gold);
+    background: linear-gradient(135deg, #fff9ec, #fffdf8);
+  }
+  .cal-label { font-size: 0.7rem; color: var(--warm-gray); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .cal-value { font-size: 1.3rem; font-weight: 700; color: var(--charcoal); }
+  .cal-unit { font-size: 0.65rem; color: var(--warm-gray); }
+  .cal-card.main-cal .cal-value { color: var(--gold); font-size: 1.5rem; }
+
+  /* SECTION DIVIDER */
+  .section-divider {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--warm-gray);
+    margin: 24px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 20px 28px;
+    border-top: 1px solid var(--border);
+    background: var(--warm-white);
+    position: sticky;
+    bottom: 0;
+  }
+
+  /* VIEW MODAL */
+  .view-photo-main {
+    width: 100%;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, var(--sage-light), var(--terracotta-light));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 5rem;
+    overflow: hidden;
+    position: relative;
+  }
+  .view-photo-main img { width: 100%; height: auto; display: block; object-fit: contain; position: static; }
+
+  .view-photo-strip { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; }
+  .strip-thumb {
+    width: 70px;
+    height: 70px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: var(--border);
+  }
+  .strip-thumb.active { border-color: var(--terracotta); }
+  .strip-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+  .view-meta-row { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
+  .view-meta-item { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--warm-gray); }
+  .view-meta-item strong { color: var(--charcoal); }
+
+  .view-calorie-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .vcal-item { flex: 1; text-align: center; }
+  .vcal-label { font-size: 0.68rem; color: var(--warm-gray); letter-spacing: 0.05em; text-transform: uppercase; }
+  .vcal-val { font-size: 1.2rem; font-weight: 700; color: var(--charcoal); }
+  .vcal-val.highlight { color: var(--gold); font-size: 1.5rem; }
+
+  .ingr-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .ingr-table th { text-align: left; padding: 8px 12px; background: var(--cream); font-size: 0.75rem; color: var(--warm-gray); font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
+  .ingr-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .ingr-table tr:last-child td { border-bottom: none; }
+
+  .steps-list { display: flex; flex-direction: column; gap: 14px; }
+  .step-item { display: flex; gap: 14px; align-items: flex-start; }
+  .step-num {
+    width: 28px;
+    height: 28px;
+    background: var(--terracotta);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-text { font-size: 0.9rem; line-height: 1.6; padding-top: 3px; }
+
+  .action-row { display: flex; gap: 10px; margin-top: 24px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .form-grid { grid-template-columns: 1fr; }
+    .calorie-grid { grid-template-columns: 1fr 1fr; }
+    .ingredient-row { grid-template-columns: 2fr 1fr auto; }
+    .ingredient-row .unit-col { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">雁君的<span>食譜</span>庫</div>
+    <div class="header-actions">
+      <button class="btn-primary" onclick="openAddModal()">＋ 新增食譜</button>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">全部</div>
+      <button class="category-btn active" data-cat="all" onclick="filterCat('all', this)">
+        <span class="cat-icon">🍽️</span> 所有食譜
+        <span class="cat-count" id="cnt-all">0</span>
+      </button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">🇨🇳 中式</div>
+      <button class="category-btn" data-cat="中式-湯品" onclick="filterCat('中式-湯品', this)">
+        <span class="cat-icon">🍲</span> 湯品
+        <span class="cat-count" id="cnt-中式-湯品">0</span>
+      </button>
+      <button class="category-btn" data-cat="中式-青菜" onclick="filterCat('中式-青菜', this)">
+        <span class="cat-icon">🥬</span> 青菜
+        <span class="cat-count" id="cnt-中式-青菜">0</span>
+      </button>
+      <button class="category-btn" data-cat="中式-豆腐" onclick="filterCat('中式-豆腐', this)">
+        <span class="cat-icon">🫘</span> 豆腐
+        <span class="cat-count" id="cnt-中式-豆腐">0</span>
+      </button>
+      <button class="category-btn" data-cat="中式-蛋類" onclick="filterCat('中式-蛋類', this)">
+        <span class="cat-icon">🥚</span> 蛋類
+        <span class="cat-count" id="cnt-中式-蛋類">0</span>
+      </button>
+      <button class="category-btn" data-cat="中式-米麵" onclick="filterCat('中式-米麵', this)">
+        <span class="cat-icon">🍜</span> 米麵
+        <span class="cat-count" id="cnt-中式-米麵">0</span>
+      </button>
+      <button class="category-btn" data-cat="中式-甜點" onclick="filterCat('中式-甜點', this)">
+        <span class="cat-icon">🍡</span> 甜點
+        <span class="cat-count" id="cnt-中式-甜點">0</span>
+      </button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">🌍 西式</div>
+      <button class="category-btn" data-cat="西式-前菜" onclick="filterCat('西式-前菜', this)">
+        <span class="cat-icon">🥗</span> 前菜
+        <span class="cat-count" id="cnt-西式-前菜">0</span>
+      </button>
+      <button class="category-btn" data-cat="西式-主菜" onclick="filterCat('西式-主菜', this)">
+        <span class="cat-icon">🥩</span> 主菜
+        <span class="cat-count" id="cnt-西式-主菜">0</span>
+      </button>
+      <button class="category-btn" data-cat="西式-湯品" onclick="filterCat('西式-湯品', this)">
+        <span class="cat-icon">🍵</span> 湯品
+        <span class="cat-count" id="cnt-西式-湯品">0</span>
+      </button>
+      <button class="category-btn" data-cat="西式-甜點" onclick="filterCat('西式-甜點', this)">
+        <span class="cat-icon">🍰</span> 甜點
+        <span class="cat-count" id="cnt-西式-甜點">0</span>
+      </button>
+      <button class="category-btn" data-cat="西式-麵包" onclick="filterCat('西式-麵包', this)">
+        <span class="cat-icon">🍞</span> 麵包
+        <span class="cat-count" id="cnt-西式-麵包">0</span>
+      </button>
+      <button class="category-btn" data-cat="西式-麵食" onclick="filterCat('西式-麵食', this)">
+        <span class="cat-icon">🍝</span> 麵食
+        <span class="cat-count" id="cnt-西式-麵食">0</span>
+      </button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">其他</div>
+      <button class="category-btn" data-cat="醃漬類" onclick="filterCat('醃漬類', this)">
+        <span class="cat-icon">🫙</span> 醃漬類
+        <span class="cat-count" id="cnt-醃漬類">0</span>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <h1 class="page-title" id="page-title">所有食譜</h1>
+        <span class="recipe-count" id="recipe-count-label">0 道</span>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="搜尋食譜名稱或食材…" id="search-input" oninput="renderCards()">
+        </div>
+        <select class="btn-secondary" id="sort-select" onchange="renderCards()" style="cursor:pointer;">
+          <option value="newest">最新</option>
+          <option value="name">名稱</option>
+          <option value="cal-asc">熱量↑</option>
+          <option value="cal-desc">熱量↓</option>
+        </select>
+      </div>
+    </div>
+    <div class="recipe-grid" id="recipe-grid"></div>
+  </main>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="modal-add">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-add-title">新增食譜</div>
+      <button class="modal-close" onclick="closeModal('modal-add')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-grid">
+        <div class="form-group form-full">
+          <label class="form-label">食譜名稱 *</label>
+          <input class="form-input" id="f-name" placeholder="例：番茄炒蛋、牛肉麵…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">分類 *</label>
+          <select class="form-select" id="f-cat">
+            <optgroup label="🇨🇳 中式">
+              <option value="中式-湯品">中式 — 湯品</option>
+              <option value="中式-青菜">中式 — 青菜</option>
+              <option value="中式-豆腐">中式 — 豆腐</option>
+              <option value="中式-蛋類">中式 — 蛋類</option>
+              <option value="中式-米麵">中式 — 米麵</option>
+              <option value="中式-甜點">中式 — 甜點</option>
+            </optgroup>
+            <optgroup label="🌍 西式">
+              <option value="西式-前菜">西式 — 前菜</option>
+              <option value="西式-主菜">西式 — 主菜</option>
+              <option value="西式-湯品">西式 — 湯品</option>
+              <option value="西式-甜點">西式 — 甜點</option>
+              <option value="西式-麵包">西式 — 麵包</option>
+              <option value="西式-麵食">西式 — 麵食</option>
+            </optgroup>
+            <optgroup label="其他">
+              <option value="醃漬類">醃漬類</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">份量（幾人份）</label>
+          <input class="form-input" id="f-servings" type="number" min="1" placeholder="2">
+        </div>
+        <div class="form-group">
+          <label class="form-label">烹調時間（分鐘）</label>
+          <input class="form-input" id="f-time" type="number" min="1" placeholder="30">
+        </div>
+        <div class="form-group">
+          <label class="form-label">難易度</label>
+          <select class="form-select" id="f-level">
+            <option value="簡單">🟢 簡單</option>
+            <option value="中等">🟡 中等</option>
+            <option value="困難">🔴 困難</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-divider">食材清單</div>
+      <div class="ingredients-list" id="ingredients-list"></div>
+      <button class="btn-add-row" onclick="addIngredientRow()">＋ 新增食材</button>
+
+      <div class="section-divider">烹調步驟</div>
+      <div class="form-group">
+        <textarea class="form-textarea" id="f-steps" rows="6" placeholder="步驟1：將食材洗淨備用…
+步驟2：熱鍋加油…
+步驟3：…"></textarea>
+      </div>
+
+      <div class="section-divider">熱量資訊（每份）</div>
+      <div class="calorie-grid">
+        <div class="cal-card main-cal">
+          <div class="cal-label">總熱量</div>
+          <input class="form-input" id="f-cal" type="number" min="0" placeholder="350" style="text-align:center;font-size:1.2rem;font-weight:700;border:none;padding:4px;background:transparent;color:var(--gold)">
+          <div class="cal-unit">大卡 (kcal)</div>
+        </div>
+        <div class="cal-card">
+          <div class="cal-label">蛋白質</div>
+          <input class="form-input" id="f-protein" type="number" min="0" placeholder="20" style="text-align:center;font-size:1.1rem;border:none;padding:4px;background:transparent;">
+          <div class="cal-unit">克 (g)</div>
+        </div>
+        <div class="cal-card">
+          <div class="cal-label">碳水化合物</div>
+          <input class="form-input" id="f-carbs" type="number" min="0" placeholder="40" style="text-align:center;font-size:1.1rem;border:none;padding:4px;background:transparent;">
+          <div class="cal-unit">克 (g)</div>
+        </div>
+        <div class="cal-card">
+          <div class="cal-label">脂肪</div>
+          <input class="form-input" id="f-fat" type="number" min="0" placeholder="10" style="text-align:center;font-size:1.1rem;border:none;padding:4px;background:transparent;">
+          <div class="cal-unit">克 (g)</div>
+        </div>
+      </div>
+
+      <div class="section-divider">相片</div>
+      <div class="photo-upload" id="photo-upload-zone" onclick="document.getElementById('photo-file-input').click()">
+        <input type="file" id="photo-file-input" accept="image/*" multiple style="display:none" onchange="handlePhotos(this)">
+        <div class="upload-icon">📷</div>
+        <p>點擊<strong>上傳照片</strong>（可多選）</p>
+        <p>支援 JPG、PNG、WEBP 格式</p>
+      </div>
+      <div class="photo-preview" id="photo-preview"></div>
+
+      <div class="form-group" style="margin-top:16px;">
+        <label class="form-label">備註 / 小訣竅</label>
+        <textarea class="form-textarea" id="f-notes" rows="3" placeholder="例：建議提前醃製、可冷藏保存3天…"></textarea>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-add')">取消</button>
+      <button class="btn-primary" onclick="saveRecipe()">💾 儲存食譜</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW MODAL -->
+<div class="modal-overlay" id="modal-view">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="view-title">食譜詳情</div>
+      <button class="modal-close" onclick="closeModal('modal-view')">✕</button>
+    </div>
+    <div class="modal-body" id="view-body"></div>
+  </div>
+</div>
+
+<script>
+let recipes = JSON.parse(localStorage.getItem('my-recipes') || '[]');
+let currentCat = 'all';
+let editingId = null;
+let tempPhotos = []; // base64 strings
+
+const CATEGORY_EMOJI = {
+  '中式-湯品':'🍲','中式-青菜':'🥬','中式-豆腐':'🫘','中式-蛋類':'🥚','中式-米麵':'🍜','中式-甜點':'🍡',
+  '西式-前菜':'🥗','西式-主菜':'🥩','西式-湯品':'🍵','西式-甜點':'🍰','西式-麵包':'🍞','西式-麵食':'🍝',
+  '醃漬類':'🫙'
+};
+
+function save() { localStorage.setItem('my-recipes', JSON.stringify(recipes)); }
+
+function editRecipeById(id) {
+  const r = recipes.find(r => r.id === id);
+  if (r) openAddModal(r);
+}
+
+function updateCounts() {
+  const all = document.getElementById('cnt-all');
+  if (all) all.textContent = recipes.length;
+  const cats = ['中式-湯品','中式-青菜','中式-豆腐','中式-蛋類','中式-米麵','中式-甜點','西式-前菜','西式-主菜','西式-湯品','西式-甜點','西式-麵包','西式-麵食','醃漬類'];
+  cats.forEach(c => {
+    const el = document.getElementById('cnt-' + c);
+    if (el) el.textContent = recipes.filter(r => r.cat === c).length;
+  });
+}
+
+function getFiltered() {
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  const sort = document.getElementById('sort-select').value;
+  let list = recipes.filter(r => {
+    const catOk = currentCat === 'all' || r.cat === currentCat;
+    if (!catOk) return false;
+    if (!q) return true;
+    const haystack = (r.name + r.cat + (r.ingredients||[]).map(i=>i.name).join(' ')).toLowerCase();
+    return haystack.includes(q);
+  });
+  if (sort === 'name') list.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  else if (sort === 'cal-asc') list.sort((a,b) => (a.cal||0)-(b.cal||0));
+  else if (sort === 'cal-desc') list.sort((a,b) => (b.cal||0)-(a.cal||0));
+  else list.sort((a,b) => (b.id||0)-(a.id||0));
+  return list;
+}
+
+function renderCards() {
+  const grid = document.getElementById('recipe-grid');
+  const list = getFiltered();
+  document.getElementById('recipe-count-label').textContent = list.length + ' 道';
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="icon">🍳</div>
+      <h3>還沒有食譜</h3>
+      <p>點擊「新增食譜」開始建立你的食譜庫</p>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = list.map(r => {
+    const photoHtml = r.photos && r.photos.length
+      ? `<img src="${r.photos[0]}" alt="${r.name}">`
+      : '';
+    const emoji = CATEGORY_EMOJI[r.cat] || '🍽️';
+    return `<div class="recipe-card" onclick="viewRecipe(${r.id})">
+      <div class="card-photo">
+        ${emoji}
+        ${photoHtml}
+        <div class="card-cat-badge">${r.cat}</div>
+        ${r.cal ? `<div class="card-cal-badge">🔥 ${r.cal} kcal</div>` : ''}
+      </div>
+      <div class="card-body">
+        <div class="card-title">${r.name}</div>
+        <div class="card-meta">
+          ${r.servings ? `<span>👥 ${r.servings} 人份</span>` : ''}
+          ${r.time ? `<span>⏱️ ${r.time} 分鐘</span>` : ''}
+          ${r.level ? `<span>${r.level === '簡單' ? '🟢' : r.level === '中等' ? '🟡' : '🔴'} ${r.level}</span>` : ''}
+        </div>
+        ${r.ingredients && r.ingredients.length ? `<div class="card-tags">${r.ingredients.slice(0,4).map(i=>`<span class="tag">${i.name}</span>`).join('')}${r.ingredients.length > 4 ? `<span class="tag">+${r.ingredients.length-4}</span>` : ''}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterCat(cat, btn) {
+  currentCat = cat;
+  document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const titles = {
+    'all':'所有食譜',
+    '中式-湯品':'中式 • 湯品','中式-青菜':'中式 • 青菜','中式-豆腐':'中式 • 豆腐',
+    '中式-蛋類':'中式 • 蛋類','中式-米麵':'中式 • 米麵','中式-甜點':'中式 • 甜點',
+    '西式-前菜':'西式 • 前菜','西式-主菜':'西式 • 主菜','西式-湯品':'西式 • 湯品','西式-甜點':'西式 • 甜點','西式-麵包':'西式 • 麵包','西式-麵食':'西式 • 麵食',
+    '醃漬類':'醃漬類'
+  };
+  document.getElementById('page-title').textContent = titles[cat] || cat;
+  renderCards();
+}
+
+// Ingredients
+function addIngredientRow(name='', amount='', unit='') {
+  const list = document.getElementById('ingredients-list');
+  const row = document.createElement('div');
+  row.className = 'ingredient-row';
+  row.innerHTML = `
+    <input class="form-input" placeholder="食材名稱" value="${name}" style="font-size:0.88rem;padding:8px 10px">
+    <input class="form-input" placeholder="份量" value="${amount}" type="text" style="font-size:0.88rem;padding:8px 10px">
+    <input class="form-input unit-col" placeholder="單位" value="${unit}" style="font-size:0.88rem;padding:8px 10px">
+    <button class="btn-icon" onclick="this.closest('.ingredient-row').remove()" title="移除">✕</button>
+  `;
+  list.appendChild(row);
+}
+
+function getIngredients() {
+  const rows = document.querySelectorAll('#ingredients-list .ingredient-row');
+  return Array.from(rows).map(r => {
+    const inputs = r.querySelectorAll('input');
+    return { name: inputs[0].value.trim(), amount: inputs[1].value.trim(), unit: inputs[2].value.trim() };
+  }).filter(i => i.name);
+}
+
+// Photos
+function handlePhotos(input) {
+  const files = Array.from(input.files);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      tempPhotos.push(e.target.result);
+      renderPhotoPreview();
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function renderPhotoPreview() {
+  const preview = document.getElementById('photo-preview');
+  preview.innerHTML = tempPhotos.map((p, i) => `
+    <div class="preview-item">
+      <img src="${p}" alt="photo ${i+1}">
+      <button class="preview-remove" onclick="removePhoto(${i})">✕</button>
+    </div>`).join('');
+}
+
+function removePhoto(i) {
+  tempPhotos.splice(i, 1);
+  renderPhotoPreview();
+}
+
+// Modal
+function openAddModal(recipe = null) {
+  editingId = recipe ? recipe.id : null;
+  document.getElementById('modal-add-title').textContent = recipe ? '編輯食譜' : '新增食譜';
+  document.getElementById('f-name').value = recipe?.name || '';
+  document.getElementById('f-cat').value = recipe?.cat || '中式-湯品';
+  document.getElementById('f-servings').value = recipe?.servings || '';
+  document.getElementById('f-time').value = recipe?.time || '';
+  document.getElementById('f-level').value = recipe?.level || '簡單';
+  document.getElementById('f-steps').value = recipe?.steps || '';
+  document.getElementById('f-cal').value = recipe?.cal || '';
+  document.getElementById('f-protein').value = recipe?.protein || '';
+  document.getElementById('f-carbs').value = recipe?.carbs || '';
+  document.getElementById('f-fat').value = recipe?.fat || '';
+  document.getElementById('f-notes').value = recipe?.notes || '';
+  document.getElementById('ingredients-list').innerHTML = '';
+  (recipe?.ingredients || []).forEach(i => addIngredientRow(i.name, i.amount, i.unit));
+  if (!recipe?.ingredients?.length) addIngredientRow();
+  tempPhotos = recipe?.photos ? [...recipe.photos] : [];
+  renderPhotoPreview();
+  document.getElementById('modal-add').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function saveRecipe() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { alert('請輸入食譜名稱！'); return; }
+  const recipe = {
+    id: editingId || Date.now(),
+    name,
+    cat: document.getElementById('f-cat').value,
+    servings: document.getElementById('f-servings').value,
+    time: document.getElementById('f-time').value,
+    level: document.getElementById('f-level').value,
+    ingredients: getIngredients(),
+    steps: document.getElementById('f-steps').value.trim(),
+    cal: Number(document.getElementById('f-cal').value) || 0,
+    protein: Number(document.getElementById('f-protein').value) || 0,
+    carbs: Number(document.getElementById('f-carbs').value) || 0,
+    fat: Number(document.getElementById('f-fat').value) || 0,
+    notes: document.getElementById('f-notes').value.trim(),
+    photos: [...tempPhotos],
+  };
+  if (editingId) {
+    const idx = recipes.findIndex(r => r.id === editingId);
+    if (idx >= 0) recipes[idx] = recipe;
+  } else {
+    recipes.push(recipe);
+  }
+  save();
+  updateCounts();
+  renderCards();
+  closeModal('modal-add');
+}
+
+// View
+function viewRecipe(id) {
+  const r = recipes.find(r => r.id === id);
+  if (!r) return;
+  document.getElementById('view-title').textContent = r.name;
+
+  let photosHtml = '';
+  if (r.photos && r.photos.length) {
+    photosHtml = `
+      <div class="view-photo-main" id="main-photo-display">
+        <img src="${r.photos[0]}" id="main-photo-img">
+      </div>`;
+    if (r.photos.length > 1) {
+      photosHtml += `<div class="view-photo-strip">${r.photos.map((p,i)=>
+        `<div class="strip-thumb${i===0?' active':''}" onclick="selectPhoto(${i})" id="thumb-${i}"><img src="${p}"></div>`
+      ).join('')}</div>`;
+    }
+  } else {
+    const emoji = CATEGORY_EMOJI[r.cat] || '🍽️';
+    photosHtml = `<div class="view-photo-main">${emoji}</div>`;
+  }
+
+  const calHtml = (r.cal || r.protein || r.carbs || r.fat) ? `
+    <div class="view-calorie-bar">
+      <div class="vcal-item"><div class="vcal-label">總熱量</div><div class="vcal-val highlight">${r.cal || '—'}<span style="font-size:0.75rem;font-weight:400;color:var(--warm-gray)"> kcal</span></div></div>
+      <div style="width:1px;background:var(--border)"></div>
+      <div class="vcal-item"><div class="vcal-label">蛋白質</div><div class="vcal-val">${r.protein || '—'}<span style="font-size:0.7rem;font-weight:400;color:var(--warm-gray)"> g</span></div></div>
+      <div class="vcal-item"><div class="vcal-label">碳水化合物</div><div class="vcal-val">${r.carbs || '—'}<span style="font-size:0.7rem;font-weight:400;color:var(--warm-gray)"> g</span></div></div>
+      <div class="vcal-item"><div class="vcal-label">脂肪</div><div class="vcal-val">${r.fat || '—'}<span style="font-size:0.7rem;font-weight:400;color:var(--warm-gray)"> g</span></div></div>
+    </div>` : '';
+
+  const ingrHtml = r.ingredients && r.ingredients.length ? `
+    <table class="ingr-table">
+      <tr><th>食材</th><th>份量</th><th>單位</th></tr>
+      ${r.ingredients.map(i=>`<tr><td>${i.name}</td><td>${i.amount||'—'}</td><td>${i.unit||'—'}</td></tr>`).join('')}
+    </table>` : '<p style="color:var(--warm-gray);font-size:0.9rem;">無食材資訊</p>';
+
+  const stepsHtml = r.steps ? `<div class="steps-list">${r.steps.split('\n').filter(s=>s.trim()).map((s,i)=>`
+    <div class="step-item"><div class="step-num">${i+1}</div><div class="step-text">${s.replace(/^步驟\d+[：:]\s*/,'')}</div></div>`).join('')}</div>` : '<p style="color:var(--warm-gray);font-size:0.9rem;">無步驟資訊</p>';
+
+  document.getElementById('view-body').innerHTML = `
+    ${photosHtml}
+    <div class="view-meta-row">
+      <div class="view-meta-item">📂 <strong>${r.cat}</strong></div>
+      ${r.servings ? `<div class="view-meta-item">👥 <strong>${r.servings}</strong> 人份</div>` : ''}
+      ${r.time ? `<div class="view-meta-item">⏱️ <strong>${r.time}</strong> 分鐘</div>` : ''}
+      ${r.level ? `<div class="view-meta-item"><strong>${r.level}</strong></div>` : ''}
+    </div>
+    ${calHtml}
+    <div class="section-divider">食材清單</div>
+    ${ingrHtml}
+    <div class="section-divider">烹調步驟</div>
+    ${stepsHtml}
+    ${r.notes ? `<div class="section-divider">備註 / 小訣竅</div><p style="font-size:0.9rem;line-height:1.7;color:var(--charcoal);">${r.notes}</p>` : ''}
+    <div class="action-row">
+      <button class="btn-primary" onclick="closeModal('modal-view');editRecipeById(${r.id})" style="font-size:0.85rem;padding:9px 16px">✏️ 編輯食譜</button>
+      <button class="btn-secondary" onclick="printRecipe(${r.id})" style="font-size:0.85rem;">🖨️ 列印</button>
+      <button class="btn-secondary" onclick="deleteRecipe(${r.id})" style="color:#c4614a;border-color:#c4614a;font-size:0.85rem;">🗑️ 刪除</button>
+    </div>
+  `;
+  document.getElementById('modal-view').classList.add('open');
+}
+
+function selectPhoto(i) {
+  const viewRecipeId = recipes.find(r => document.getElementById('view-title').textContent === r.name)?.id;
+  const r = viewRecipeId ? recipes.find(r => r.id === viewRecipeId) : null;
+  document.getElementById('main-photo-img').src = r ? r.photos[i] : '';
+  document.querySelectorAll('.strip-thumb').forEach((t, idx) => t.classList.toggle('active', idx === i));
+}
+
+function deleteRecipe(id) {
+  if (!confirm('確定要刪除這個食譜嗎？')) return;
+  recipes = recipes.filter(r => r.id !== id);
+  save();
+  updateCounts();
+  renderCards();
+  closeModal('modal-view');
+}
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+
+// DEMO DATA
+function loadDemo() {
+  if (recipes.length) return;
+  recipes = [
+    {
+      id: 1001,
+      name: '番茄炒蛋',
+      cat: '中式-蛋類',
+      servings: 2,
+      time: 15,
+      level: '簡單',
+      ingredients: [
+        {name:'番茄', amount:'2', unit:'顆'},
+        {name:'雞蛋', amount:'3', unit:'顆'},
+        {name:'鹽', amount:'適量', unit:''},
+        {name:'白糖', amount:'1', unit:'茶匙'},
+        {name:'食用油', amount:'2', unit:'湯匙'},
+      ],
+      steps: '步驟1：雞蛋打散加少許鹽攪勻\n步驟2：番茄切塊備用\n步驟3：熱鍋下油，蛋液倒入炒熟盛起\n步驟4：原鍋炒番茄至出汁，加糖調味\n步驟5：倒入炒蛋，翻炒均勻即可',
+      cal: 180, protein: 12, carbs: 8, fat: 11,
+      notes: '番茄要選熟透的，甜度更高。加點白糖可以提鮮！',
+      photos: []
+    },
+    {
+      id: 1002,
+      name: '麻婆豆腐',
+      cat: '中式-豆腐',
+      servings: 3,
+      time: 25,
+      level: '中等',
+      ingredients: [
+        {name:'豆腐', amount:'300', unit:'g'},
+        {name:'豬絞肉', amount:'100', unit:'g'},
+        {name:'豆瓣醬', amount:'1', unit:'湯匙'},
+        {name:'花椒粉', amount:'適量', unit:''},
+        {name:'蒜末', amount:'2', unit:'瓣'},
+      ],
+      steps: '步驟1：豆腐切丁，熱水汆燙去豆腥\n步驟2：炒香絞肉至熟\n步驟3：加入豆瓣醬、蒜末炒香\n步驟4：加入高湯，放入豆腐小火燉3分鐘\n步驟5：勾芡，撒花椒粉上桌',
+      cal: 220, protein: 18, carbs: 6, fat: 13,
+      notes: '喜歡麻辣的可增加花椒和辣椒份量',
+      photos: []
+    },
+    {
+      id: 1003,
+      name: '味噌湯',
+      cat: '西式-湯品',
+      servings: 2,
+      time: 10,
+      level: '簡單',
+      ingredients: [
+        {name:'味噌', amount:'2', unit:'湯匙'},
+        {name:'豆腐', amount:'100', unit:'g'},
+        {name:'海帶芽', amount:'適量', unit:''},
+        {name:'蔥花', amount:'適量', unit:''},
+        {name:'昆布高湯', amount:'400', unit:'ml'},
+      ],
+      steps: '步驟1：高湯煮滾\n步驟2：放入豆腐和海帶芽\n步驟3：關火，溶入味噌\n步驟4：撒蔥花上桌',
+      cal: 80, protein: 6, carbs: 7, fat: 2,
+      notes: '味噌不可煮沸，否則香氣流失',
+      photos: []
+    }
+  ];
+  save();
+}
+
+function printRecipe(id) {
+  const r = recipes.find(r => r.id === id);
+  if (!r) return;
+
+  const emoji = CATEGORY_EMOJI[r.cat] || '🍽️';
+  const photoHtml = r.photos && r.photos.length
+    ? `<img src="${r.photos[0]}" style="width:100%;max-height:280px;object-fit:cover;border-radius:10px;margin-bottom:20px;">`
+    : `<div style="font-size:4rem;text-align:center;margin-bottom:20px;">${emoji}</div>`;
+
+  const ingrRows = r.ingredients && r.ingredients.length
+    ? r.ingredients.map(i => `<tr><td style="padding:6px 10px;border-bottom:1px solid #eee;">${i.name}</td><td style="padding:6px 10px;border-bottom:1px solid #eee;">${i.amount||''}</td><td style="padding:6px 10px;border-bottom:1px solid #eee;">${i.unit||''}</td></tr>`).join('')
+    : '<tr><td colspan="3" style="padding:6px 10px;color:#999;">無食材資訊</td></tr>';
+
+  const stepsHtml = r.steps
+    ? r.steps.split('\n').filter(s=>s.trim()).map((s,i)=>
+        `<div style="display:flex;gap:12px;margin-bottom:12px;align-items:flex-start;">
+          <div style="min-width:26px;height:26px;background:#c4614a;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;">${i+1}</div>
+          <div style="padding-top:3px;line-height:1.6;">${s.replace(/^步驟\d+[：:]\s*/,'')}</div>
+        </div>`).join('')
+    : '<p style="color:#999;">無步驟資訊</p>';
+
+  const calHtml = (r.cal || r.protein || r.carbs || r.fat) ? `
+    <div style="display:flex;gap:0;border:1.5px solid #e8ddd0;border-radius:10px;overflow:hidden;margin-bottom:20px;">
+      <div style="flex:1;text-align:center;padding:12px;background:#fff9ec;border-right:1px solid #e8ddd0;">
+        <div style="font-size:0.65rem;color:#8a8278;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;">總熱量</div>
+        <div style="font-size:1.4rem;font-weight:700;color:#c9973a;">${r.cal||'—'}</div>
+        <div style="font-size:0.65rem;color:#8a8278;">kcal</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:12px;border-right:1px solid #e8ddd0;">
+        <div style="font-size:0.65rem;color:#8a8278;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;">蛋白質</div>
+        <div style="font-size:1.1rem;font-weight:700;">${r.protein||'—'}</div>
+        <div style="font-size:0.65rem;color:#8a8278;">g</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:12px;border-right:1px solid #e8ddd0;">
+        <div style="font-size:0.65rem;color:#8a8278;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;">碳水</div>
+        <div style="font-size:1.1rem;font-weight:700;">${r.carbs||'—'}</div>
+        <div style="font-size:0.65rem;color:#8a8278;">g</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:12px;">
+        <div style="font-size:0.65rem;color:#8a8278;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;">脂肪</div>
+        <div style="font-size:1.1rem;font-weight:700;">${r.fat||'—'}</div>
+        <div style="font-size:0.65rem;color:#8a8278;">g</div>
+      </div>
+    </div>` : '';
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>${r.name} — 雁君的食譜庫</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Noto Sans TC',sans-serif; color:#2c2c2c; background:white; padding:32px; max-width:680px; margin:0 auto; }
+  h1 { font-family:'Noto Serif TC',serif; font-size:1.8rem; font-weight:700; margin-bottom:6px; }
+  .meta { display:flex; gap:16px; font-size:0.85rem; color:#8a8278; margin-bottom:20px; flex-wrap:wrap; }
+  .section-title { font-size:0.72rem; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:#8a8278; border-bottom:2px solid #c4614a; padding-bottom:4px; margin:20px 0 12px; }
+  table { width:100%; border-collapse:collapse; font-size:0.9rem; }
+  th { text-align:left; padding:6px 10px; background:#fdf6ec; font-size:0.72rem; color:#8a8278; font-weight:500; letter-spacing:0.05em; text-transform:uppercase; }
+  .footer { margin-top:32px; padding-top:16px; border-top:1px solid #e8ddd0; font-size:0.75rem; color:#aaa; text-align:center; }
+  @media print {
+    body { padding: 20px; }
+    .no-print { display:none; }
+  }
+</style>
+</head>
+<body>
+  <div class="no-print" style="margin-bottom:20px;">
+    <button onclick="window.print()" style="background:#c4614a;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:0.9rem;font-family:'Noto Sans TC',sans-serif;">🖨️ 列印 / 儲存為 PDF</button>
+  </div>
+  ${photoHtml}
+  <h1>${r.name}</h1>
+  <div class="meta">
+    <span>📂 ${r.cat}</span>
+    ${r.servings ? `<span>👥 ${r.servings} 人份</span>` : ''}
+    ${r.time ? `<span>⏱️ ${r.time} 分鐘</span>` : ''}
+    ${r.level ? `<span>${r.level === '簡單' ? '🟢' : r.level === '中等' ? '🟡' : '🔴'} ${r.level}</span>` : ''}
+  </div>
+  ${calHtml}
+  <div class="section-title">食材清單</div>
+  <table>
+    <tr><th>食材</th><th>份量</th><th>單位</th></tr>
+    ${ingrRows}
+  </table>
+  <div class="section-title">烹調步驟</div>
+  ${stepsHtml}
+  ${r.notes ? `<div class="section-title">備註 / 小訣竅</div><p style="font-size:0.9rem;line-height:1.7;">${r.notes}</p>` : ''}
+  <div class="footer">雁君的食譜庫</div>
+</body>
+</html>`);
+  win.document.close();
+}
+
+loadDemo();
+updateCounts();
+renderCards();
+</script>
+</body>
+</html>
