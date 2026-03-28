@@ -1074,7 +1074,15 @@ const CATEGORY_EMOJI = {
   '醃漬類':'🫙','其他':'📌'
 };
 
-function save() { localStorage.setItem('my-recipes', JSON.stringify(recipes)); }
+function save() {
+  try {
+    localStorage.setItem('my-recipes', JSON.stringify(recipes));
+    return true;
+  } catch(e) {
+    alert('❌ 儲存失敗！\n\n可能原因：照片檔案太大，超過瀏覽器儲存上限（約 5MB）。\n\n建議：減少照片數量，或使用較小的圖片檔案。');
+    return false;
+  }
+}
 
 function editRecipeById(id) {
   const r = recipes.find(r => r.id === id);
@@ -1183,15 +1191,29 @@ function getIngredients() {
 }
 
 // Photos
+function compressImage(file, maxWidth = 1200, quality = 0.75) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let w = img.width, h = img.height;
+      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = url;
+  });
+}
+
 function handlePhotos(input) {
   const files = Array.from(input.files);
-  files.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      tempPhotos.push(e.target.result);
-      renderPhotoPreview();
-    };
-    reader.readAsDataURL(file);
+  files.forEach(async file => {
+    const compressed = await compressImage(file);
+    tempPhotos.push(compressed);
+    renderPhotoPreview();
   });
   input.value = '';
 }
