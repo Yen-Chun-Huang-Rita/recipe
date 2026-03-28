@@ -54,6 +54,19 @@
   }
   .logo span { color: var(--terracotta-light); }
   .header-actions { display: flex; gap: 12px; align-items: center; }
+  .btn-header-outline {
+    background: transparent;
+    color: var(--cream);
+    border: 1.5px solid rgba(255,255,255,0.35);
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-header-outline:hover { border-color: var(--terracotta-light); color: var(--terracotta-light); background: rgba(196,97,74,0.1); }
 
   /* LAYOUT */
   .app { display: flex; min-height: calc(100vh - 64px); }
@@ -591,6 +604,68 @@
     .ingredient-row { grid-template-columns: 2fr 1fr auto; }
     .ingredient-row .unit-col { display: none; }
   }
+
+  /* SELECT MODE */
+  .select-bar {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    background: var(--charcoal);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    animation: slideUp 0.2s ease;
+  }
+  .select-bar.active { display: flex; }
+  .select-bar-label { font-size: 0.9rem; flex: 1; }
+  .btn-danger {
+    background: #c4614a;
+    color: white;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: background 0.15s;
+  }
+  .btn-danger:hover { background: #9e4535; }
+  .btn-danger:disabled { background: #888; cursor: not-allowed; }
+  .btn-select-all-bar {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 6px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 0.82rem;
+    transition: background 0.15s;
+  }
+  .btn-select-all-bar:hover { background: rgba(255,255,255,0.25); }
+
+  .recipe-card { position: relative; }
+  .card-checkbox {
+    display: none;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    width: 24px;
+    height: 24px;
+    accent-color: var(--terracotta);
+    cursor: pointer;
+  }
+  body.select-mode .card-checkbox { display: block; }
+  body.select-mode .recipe-card { cursor: default; }
+  body.select-mode .recipe-card:hover { transform: none; box-shadow: none; }
+  body.select-mode .recipe-card.selected {
+    outline: 2.5px solid var(--terracotta);
+    box-shadow: 0 0 0 4px rgba(196,97,74,0.15);
+  }
 </style>
 </head>
 <body>
@@ -599,6 +674,10 @@
   <div class="header-inner">
     <div class="logo">雁君的<span>食譜</span>庫</div>
     <div class="header-actions">
+      <button class="btn-header-outline" onclick="exportRecipes()" title="匯出食譜">⬇ 匯出</button>
+      <button class="btn-header-outline" onclick="document.getElementById('import-file-input').click()" title="匯入食譜">⬆ 匯入</button>
+      <input type="file" id="import-file-input" accept=".xlsx,.csv,.json" style="display:none" onchange="importRecipes(this)">
+      <button class="btn-header-outline" onclick="openSyncModal()" title="雲端同步">☁ 同步</button>
       <button class="btn-primary" onclick="openAddModal()">＋ 新增食譜</button>
     </div>
   </div>
@@ -673,6 +752,10 @@
         <span class="cat-icon">🫙</span> 醃漬類
         <span class="cat-count" id="cnt-醃漬類">0</span>
       </button>
+      <button class="category-btn" data-cat="其他" onclick="filterCat('其他', this)">
+        <span class="cat-icon">📌</span> 其他
+        <span class="cat-count" id="cnt-其他">0</span>
+      </button>
     </div>
   </aside>
 
@@ -693,8 +776,19 @@
           <option value="cal-asc">熱量↑</option>
           <option value="cal-desc">熱量↓</option>
         </select>
+        <button class="btn-secondary" id="btn-select-mode" onclick="toggleSelectMode()" title="多選刪除">☑ 選取</button>
       </div>
     </div>
+
+    <!-- 選取模式工具列 -->
+    <div class="select-bar" id="select-bar">
+      <span class="select-bar-label" id="select-bar-label">已選 0 道</span>
+      <button class="btn-select-all-bar" onclick="selectAllVisible()">全選</button>
+      <button class="btn-select-all-bar" onclick="deselectAll()">清除</button>
+      <button class="btn-danger" id="btn-delete-selected" onclick="deleteSelected()" disabled>🗑️ 刪除所選</button>
+      <button class="btn-select-all-bar" onclick="toggleSelectMode()">取消</button>
+    </div>
+
     <div class="recipe-grid" id="recipe-grid"></div>
   </main>
 </div>
@@ -734,6 +828,7 @@
             </optgroup>
             <optgroup label="其他">
               <option value="醃漬類">醃漬類</option>
+              <option value="其他">其他</option>
             </optgroup>
           </select>
         </div>
@@ -823,16 +918,160 @@
   </div>
 </div>
 
+<!-- EXPORT MODAL -->
+<div class="modal-overlay" id="modal-export">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <div class="modal-title">匯出食譜</div>
+      <button class="modal-close" onclick="closeModal('modal-export')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="font-size:0.85rem;color:var(--warm-gray);">選擇要匯出的食譜：</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-secondary" onclick="exportSelectAll()" style="font-size:0.78rem;padding:5px 10px;">全選</button>
+          <button class="btn-secondary" onclick="exportSelectNone()" style="font-size:0.78rem;padding:5px 10px;">清除</button>
+        </div>
+      </div>
+      <div id="export-recipe-list" style="max-height:360px;overflow-y:auto;border:1.5px solid var(--border);border-radius:10px;background:white;"></div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <span id="export-selected-count" style="font-size:0.85rem;color:var(--warm-gray);align-self:center;"></span>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-secondary" onclick="closeModal('modal-export')">取消</button>
+        <button class="btn-secondary" onclick="doExportJson()" title="完整備份含照片">⬇ JSON</button>
+        <button class="btn-primary" onclick="doExportExcel()">⬇ Excel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SYNC MODAL -->
+<div class="modal-overlay" id="modal-sync">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <div class="modal-title">☁ GitHub Gist 同步</div>
+      <button class="modal-close" onclick="closeModal('modal-sync')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.85rem;color:var(--warm-gray);margin-bottom:20px;line-height:1.6;">
+        透過 GitHub Gist 儲存食譜資料，在任何裝置都能同步，不需要後端。
+      </p>
+
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">GitHub Personal Access Token</label>
+        <input class="form-input" id="sync-token" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="font-size:0.85rem;">
+        <div style="font-size:0.75rem;color:var(--warm-gray);margin-top:4px;">
+          需要 <strong>gist</strong> 權限。<a href="https://github.com/settings/tokens/new?scopes=gist&description=recipe-sync" target="_blank" style="color:var(--terracotta);">點此建立 Token</a>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Gist ID（第一次上傳後自動填入）</label>
+        <input class="form-input" id="sync-gist-id" placeholder="留空則自動建立新 Gist" style="font-size:0.85rem;">
+        <div style="font-size:0.75rem;color:var(--warm-gray);margin-top:4px;">格式：32 位英數字，例如 a1b2c3d4e5f6…</div>
+      </div>
+
+      <div id="sync-status" style="font-size:0.85rem;padding:10px 14px;border-radius:8px;display:none;margin-bottom:4px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('modal-sync')">關閉</button>
+      <button class="btn-secondary" onclick="syncDownload()">⬇ 從 Gist 載入</button>
+      <button class="btn-primary" onclick="syncUpload()">⬆ 上傳至 Gist</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 let recipes = JSON.parse(localStorage.getItem('my-recipes') || '[]');
 let currentCat = 'all';
 let editingId = null;
-let tempPhotos = []; // base64 strings
+let tempPhotos = [];
+let selectedIds = new Set();
+
+// ── SELECT MODE ──────────────────────────────────────────
+function toggleSelectMode() {
+  const isActive = document.body.classList.toggle('select-mode');
+  const btn = document.getElementById('btn-select-mode');
+  const bar = document.getElementById('select-bar');
+  if (isActive) {
+    btn.textContent = '✕ 結束選取';
+    btn.style.borderColor = 'var(--terracotta)';
+    btn.style.color = 'var(--terracotta)';
+    bar.classList.add('active');
+  } else {
+    btn.textContent = '☑ 選取';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    bar.classList.remove('active');
+    selectedIds.clear();
+  }
+  renderCards();
+  updateSelectBar();
+}
+
+function handleCardClick(e, id) {
+  if (document.body.classList.contains('select-mode')) {
+    toggleCardSelect(id);
+  } else {
+    viewRecipe(id);
+  }
+}
+
+function toggleCardSelect(id, cb) {
+  if (selectedIds.has(id)) {
+    selectedIds.delete(id);
+  } else {
+    selectedIds.add(id);
+  }
+  // Update card appearance without full re-render
+  const card = document.querySelector(`.recipe-card[data-id="${id}"]`);
+  if (card) {
+    card.classList.toggle('selected', selectedIds.has(id));
+    const checkbox = card.querySelector('.card-checkbox');
+    if (checkbox) checkbox.checked = selectedIds.has(id);
+  }
+  updateSelectBar();
+}
+
+function updateSelectBar() {
+  const n = selectedIds.size;
+  document.getElementById('select-bar-label').textContent = `已選 ${n} 道`;
+  document.getElementById('btn-delete-selected').disabled = n === 0;
+}
+
+function selectAllVisible() {
+  getFiltered().forEach(r => selectedIds.add(r.id));
+  renderCards();
+  updateSelectBar();
+}
+
+function deselectAll() {
+  selectedIds.clear();
+  renderCards();
+  updateSelectBar();
+}
+
+function deleteSelected() {
+  if (!selectedIds.size) return;
+  const names = recipes.filter(r => selectedIds.has(r.id)).map(r => r.name);
+  const msg = selectedIds.size === 1
+    ? `確定要刪除「${names[0]}」嗎？`
+    : `確定要刪除以下 ${selectedIds.size} 道食譜嗎？\n\n${names.slice(0,10).join('、')}${names.length > 10 ? `… 等` : ''}`;
+  if (!confirm(msg)) return;
+  recipes = recipes.filter(r => !selectedIds.has(r.id));
+  selectedIds.clear();
+  save();
+  updateCounts();
+  renderCards();
+  updateSelectBar();
+}
 
 const CATEGORY_EMOJI = {
   '中式-湯品':'🍲','中式-青菜':'🥬','中式-豆腐':'🫘','中式-蛋類':'🥚','中式-米麵':'🍜','中式-甜點':'🍡',
   '西式-前菜':'🥗','西式-主菜':'🥩','西式-湯品':'🍵','西式-甜點':'🍰','西式-麵包':'🍞','西式-麵食':'🍝',
-  '醃漬類':'🫙'
+  '醃漬類':'🫙','其他':'📌'
 };
 
 function save() { localStorage.setItem('my-recipes', JSON.stringify(recipes)); }
@@ -845,7 +1084,7 @@ function editRecipeById(id) {
 function updateCounts() {
   const all = document.getElementById('cnt-all');
   if (all) all.textContent = recipes.length;
-  const cats = ['中式-湯品','中式-青菜','中式-豆腐','中式-蛋類','中式-米麵','中式-甜點','西式-前菜','西式-主菜','西式-湯品','西式-甜點','西式-麵包','西式-麵食','醃漬類'];
+  const cats = ['中式-湯品','中式-青菜','中式-豆腐','中式-蛋類','中式-米麵','中式-甜點','西式-前菜','西式-主菜','西式-湯品','西式-甜點','西式-麵包','西式-麵食','醃漬類','其他'];
   cats.forEach(c => {
     const el = document.getElementById('cnt-' + c);
     if (el) el.textContent = recipes.filter(r => r.cat === c).length;
@@ -881,15 +1120,15 @@ function renderCards() {
     </div>`;
     return;
   }
+  const isSelectMode = document.body.classList.contains('select-mode');
   grid.innerHTML = list.map(r => {
-    const photoHtml = r.photos && r.photos.length
-      ? `<img src="${r.photos[0]}" alt="${r.name}">`
-      : '';
+    const photoHtml = r.photos && r.photos.length ? `<img src="${r.photos[0]}" alt="${r.name}">` : '';
     const emoji = CATEGORY_EMOJI[r.cat] || '🍽️';
-    return `<div class="recipe-card" onclick="viewRecipe(${r.id})">
+    return `<div class="recipe-card${isSelectMode && selectedIds.has(r.id) ? ' selected' : ''}" data-id="${r.id}" onclick="handleCardClick(event, ${r.id})">
       <div class="card-photo">
         ${emoji}
         ${photoHtml}
+        <input type="checkbox" class="card-checkbox" data-id="${r.id}" ${selectedIds.has(r.id) ? 'checked' : ''} onclick="event.stopPropagation();toggleCardSelect(${r.id}, this)">
         <div class="card-cat-badge">${r.cat}</div>
         ${r.cal ? `<div class="card-cal-badge">🔥 ${r.cal} kcal</div>` : ''}
       </div>
@@ -915,7 +1154,7 @@ function filterCat(cat, btn) {
     '中式-湯品':'中式 • 湯品','中式-青菜':'中式 • 青菜','中式-豆腐':'中式 • 豆腐',
     '中式-蛋類':'中式 • 蛋類','中式-米麵':'中式 • 米麵','中式-甜點':'中式 • 甜點',
     '西式-前菜':'西式 • 前菜','西式-主菜':'西式 • 主菜','西式-湯品':'西式 • 湯品','西式-甜點':'西式 • 甜點','西式-麵包':'西式 • 麵包','西式-麵食':'西式 • 麵食',
-    '醃漬類':'醃漬類'
+    '醃漬類':'醃漬類','其他':'其他'
   };
   document.getElementById('page-title').textContent = titles[cat] || cat;
   renderCards();
@@ -1271,6 +1510,359 @@ function printRecipe(id) {
 </html>`);
   win.document.close();
 }
+
+// ── EXPORT ──────────────────────────────────────────────
+function exportRecipes() {
+  if (!recipes.length) { alert('目前沒有食譜可以匯出！'); return; }
+  // Build checkbox list
+  const list = document.getElementById('export-recipe-list');
+  list.innerHTML = recipes.map(r => `
+    <label style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.12s;" onmouseover="this.style.background='#fdf6ec'" onmouseout="this.style.background='white'">
+      <input type="checkbox" class="export-cb" value="${r.id}" checked onchange="updateExportCount()" style="width:16px;height:16px;accent-color:var(--terracotta);cursor:pointer;">
+      <span style="font-size:0.85rem;flex:1;">${r.name}</span>
+      <span style="font-size:0.75rem;color:var(--warm-gray);background:var(--cream);padding:2px 8px;border-radius:8px;border:1px solid var(--border);">${r.cat}</span>
+    </label>`).join('');
+  updateExportCount();
+  document.getElementById('modal-export').classList.add('open');
+}
+
+function updateExportCount() {
+  const n = document.querySelectorAll('.export-cb:checked').length;
+  document.getElementById('export-selected-count').textContent = `已選 ${n} 道`;
+}
+
+function exportSelectAll() {
+  document.querySelectorAll('.export-cb').forEach(cb => cb.checked = true);
+  updateExportCount();
+}
+
+function exportSelectNone() {
+  document.querySelectorAll('.export-cb').forEach(cb => cb.checked = false);
+  updateExportCount();
+}
+
+function doExportExcel() {
+  const selectedIds = new Set(
+    Array.from(document.querySelectorAll('.export-cb:checked')).map(cb => Number(cb.value))
+  );
+  const toExport = recipes.filter(r => selectedIds.has(r.id));
+  if (!toExport.length) { alert('請至少選擇一道食譜！'); return; }
+
+  const wb = XLSX.utils.book_new();
+
+  // ── 單一工作表：所有欄位完整匯出（含食材與步驟）
+  const headers = [
+    '食譜名稱','分類','份量(人)','時間(分)','難易度',
+    '熱量(kcal)','蛋白質(g)','碳水(g)','脂肪(g)',
+    '食材清單','烹調步驟','備註'
+  ];
+
+  const rows = toExport.map(r => {
+    // 食材：格式為「食材名稱 份量 單位」每項用換行分隔
+    const ingrText = (r.ingredients && r.ingredients.length)
+      ? r.ingredients.map(i => [i.name, i.amount, i.unit].filter(x=>x).join(' ')).join('\n')
+      : '';
+
+    // 步驟：移除前綴「步驟N：」，保留純文字，每步一行
+    const stepsText = r.steps
+      ? r.steps.split('\n').filter(s=>s.trim()).map((s,i) =>
+          `${i+1}. ${s.replace(/^步驟\d+[：:]\s*/,'')}`
+        ).join('\n')
+      : '';
+
+    return [
+      r.name, r.cat, r.servings||'', r.time||'', r.level||'',
+      r.cal||'', r.protein||'', r.carbs||'', r.fat||'',
+      ingrText, stepsText, r.notes||''
+    ];
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  ws['!cols'] = [22,14,8,8,8,10,10,10,8,30,50,30].map(w=>({wch:w}));
+
+  // 設定有食材/步驟的欄位自動換行
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let R = 1; R <= range.e.r; R++) {
+    ['J','K'].forEach(col => {
+      const cell = ws[`${col}${R+1}`];
+      if (cell) cell.s = { alignment: { wrapText: true, vertical: 'top' } };
+    });
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, '食譜總覽');
+
+  const date = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `雁君食譜庫_${date}.xlsx`);
+  closeModal('modal-export');
+}
+
+function doExportJson() {
+  const selectedIds = new Set(
+    Array.from(document.querySelectorAll('.export-cb:checked')).map(cb => Number(cb.value))
+  );
+  const toExport = recipes.filter(r => selectedIds.has(r.id));
+  if (!toExport.length) { alert('請至少選擇一道食譜！'); return; }
+  const data = JSON.stringify({ version: 2, exported: new Date().toISOString(), recipes: toExport }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `雁君食譜庫_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  closeModal('modal-export');
+}
+
+// ── CLOUD SYNC (GitHub Gist) ────────────────────────────
+const GIST_TOKEN_KEY = 'recipe-gist-token';
+const GIST_ID_KEY    = 'recipe-gist-id';
+const GIST_FILENAME  = 'yangjun-recipes.json';
+
+function openSyncModal() {
+  document.getElementById('sync-token').value   = localStorage.getItem(GIST_TOKEN_KEY) || '';
+  document.getElementById('sync-gist-id').value = localStorage.getItem(GIST_ID_KEY) || '';
+  document.getElementById('sync-status').style.display = 'none';
+  document.getElementById('modal-sync').classList.add('open');
+}
+
+function setSyncStatus(msg, type) {
+  const el = document.getElementById('sync-status');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.background = type === 'ok'  ? '#edf7ed' : type === 'err' ? '#fdecea' : '#fdf6ec';
+  el.style.color      = type === 'ok'  ? '#2e7d32' : type === 'err' ? '#c62828' : '#666';
+  el.style.border     = `1px solid ${type === 'ok' ? '#a5d6a7' : type === 'err' ? '#ef9a9a' : '#e8ddd0'}`;
+}
+
+function getGistCreds() {
+  const token  = document.getElementById('sync-token').value.trim();
+  const gistId = document.getElementById('sync-gist-id').value.trim();
+  if (!token) { setSyncStatus('請輸入 GitHub Token', 'err'); return null; }
+  localStorage.setItem(GIST_TOKEN_KEY, token);
+  if (gistId) localStorage.setItem(GIST_ID_KEY, gistId);
+  return { token, gistId };
+}
+
+async function syncUpload() {
+  const creds = getGistCreds();
+  if (!creds) return;
+  setSyncStatus('上傳中…', 'info');
+  try {
+    const payload = {
+      description: '雁君的食譜庫備份',
+      public: false,
+      files: {
+        [GIST_FILENAME]: {
+          content: JSON.stringify({ version: 2, saved: new Date().toISOString(), recipes }, null, 2)
+        }
+      }
+    };
+    let res, data;
+    if (creds.gistId) {
+      // Update existing Gist
+      res = await fetch(`https://api.github.com/gists/${creds.gistId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${creds.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      // Create new Gist
+      res = await fetch('https://api.github.com/gists', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${creds.token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    }
+    data = await res.json();
+    if (data.id) {
+      localStorage.setItem(GIST_ID_KEY, data.id);
+      document.getElementById('sync-gist-id').value = data.id;
+      setSyncStatus(`✅ 上傳成功！共 ${recipes.length} 道食譜已儲存至 Gist (${data.id.slice(0,8)}…)`, 'ok');
+    } else {
+      setSyncStatus('❌ 上傳失敗：' + (data.message || '請確認 Token 是否有 gist 權限'), 'err');
+    }
+  } catch(err) {
+    setSyncStatus('❌ 連線失敗：' + err.message, 'err');
+  }
+}
+
+async function syncDownload() {
+  const creds = getGistCreds();
+  if (!creds) return;
+  if (!creds.gistId) { setSyncStatus('請輸入 Gist ID', 'err'); return; }
+  setSyncStatus('載入中…', 'info');
+  try {
+    const res = await fetch(`https://api.github.com/gists/${creds.gistId}`, {
+      headers: { Authorization: `Bearer ${creds.token}` }
+    });
+    const data = await res.json();
+    if (!data.files || !data.files[GIST_FILENAME]) {
+      setSyncStatus('❌ 找不到食譜檔案，請確認 Gist ID 是否正確', 'err'); return;
+    }
+    const raw = JSON.parse(data.files[GIST_FILENAME].content);
+    const incoming = raw.recipes || [];
+    if (!incoming.length) { setSyncStatus('Gist 中目前沒有食譜資料', 'info'); return; }
+
+    const existingNames = new Set(recipes.map(r => r.name));
+    const toAdd    = incoming.filter(r => !existingNames.has(r.name));
+    const toUpdate = incoming.filter(r =>  existingNames.has(r.name));
+
+    let proceed = true;
+    if (toUpdate.length) {
+      proceed = confirm(`從 Gist 找到 ${incoming.length} 道食譜
+• 新增 ${toAdd.length} 道
+• ${toUpdate.length} 道同名
+
+是否覆蓋同名食譜？`);
+    }
+    if (proceed && toUpdate.length) {
+      toUpdate.forEach(r => {
+        const idx = recipes.findIndex(x => x.name === r.name);
+        if (idx >= 0) recipes[idx] = { ...r, id: recipes[idx].id, photos: recipes[idx].photos };
+      });
+    }
+    recipes.push(...toAdd);
+    save(); updateCounts(); renderCards();
+    setSyncStatus(`✅ 載入成功！新增 ${toAdd.length} 道${proceed && toUpdate.length ? `，更新 ${toUpdate.length} 道` : ''}`, 'ok');
+  } catch(err) {
+    setSyncStatus('❌ 載入失敗：' + err.message, 'err');
+  }
+}
+// ── IMPORT ──────────────────────────────────────────────
+function importRecipes(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const isJson = file.name.toLowerCase().endsWith('.json');
+  const isCsv = file.name.toLowerCase().endsWith('.csv');
+  const reader = new FileReader();
+
+  // ── JSON import path ──
+  if (isJson) {
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        const incoming = Array.isArray(data) ? data : (data.recipes || []);
+        if (!incoming.length) { alert('檔案中沒有找到食譜資料！'); input.value=''; return; }
+
+        const existingNames = new Set(recipes.map(r => r.name));
+        const toAdd = incoming.filter(r => !existingNames.has(r.name));
+        const toUpdate = incoming.filter(r => existingNames.has(r.name));
+
+        let proceed = true;
+        if (toUpdate.length) {
+          proceed = confirm(`找到 ${incoming.length} 道食譜：\n• ${toAdd.length} 道新食譜將新增\n• ${toUpdate.length} 道與現有食譜同名\n\n是否覆蓋同名食譜（含照片）？`);
+        }
+        if (proceed && toUpdate.length) {
+          toUpdate.forEach(r => {
+            const idx = recipes.findIndex(x => x.name === r.name);
+            if (idx >= 0) recipes[idx] = r;
+          });
+        }
+        recipes.push(...toAdd);
+        save(); updateCounts(); renderCards();
+        alert(`✅ 匯入完成！\n新增 ${toAdd.length} 道${proceed && toUpdate.length ? `，更新 ${toUpdate.length} 道` : ''}食譜。`);
+      } catch(err) {
+        alert('JSON 檔案格式錯誤：' + err.message);
+      }
+      input.value = '';
+    };
+    reader.readAsText(file, 'UTF-8');
+    return;
+  }
+
+  reader.onload = e => {
+    try {
+      let wb;
+      if (isCsv) {
+        wb = XLSX.read(e.target.result, { type: 'string', raw: false });
+      } else {
+        wb = XLSX.read(e.target.result, { type: 'array' });
+      }
+
+      // 讀取「食譜總覽」工作表（Excel）或第一個工作表（CSV）
+      const sheetName = wb.SheetNames.includes('食譜總覽') ? '食譜總覽' : wb.SheetNames[0];
+      const ws = wb.Sheets[sheetName];
+      if (!ws) { alert('找不到工作表，請確認檔案格式正確。'); input.value=''; return; }
+
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      if (!rows.length) { alert('檔案中沒有找到資料！'); input.value=''; return; }
+
+      const incoming = rows.map(row => {
+        const name = String(row['食譜名稱'] || row['名稱'] || '').trim();
+        if (!name) return null;
+
+        // 解析食材：每行格式為「食材名稱 份量 單位」
+        const ingrRaw = String(row['食材清單'] || row['食材'] || '').trim();
+        const ingredients = ingrRaw
+          ? ingrRaw.split('\n').map(line => {
+              line = line.trim();
+              if (!line) return null;
+              const parts = line.split(/\s+/);
+              return { name: parts[0]||line, amount: parts[1]||'', unit: parts[2]||'' };
+            }).filter(Boolean)
+          : [];
+
+        // 解析步驟：每行為一個步驟，去掉「1. 」前綴
+        const stepsRaw = String(row['烹調步驟'] || row['步驟'] || '').trim();
+        const stepsStr = stepsRaw
+          ? stepsRaw.split('\n').filter(s=>s.trim()).map((s,i) =>
+              `步驟${i+1}：${s.replace(/^\d+[\.。]\s*/,'').trim()}`
+            ).join('\n')
+          : '';
+
+        return {
+          id: Date.now() + Math.random(),
+          name,
+          cat: String(row['分類'] || '其他').trim(),
+          servings: row['份量(人)'] || row['份量'] || '',
+          time: row['時間(分)'] || row['時間'] || '',
+          level: String(row['難易度'] || '簡單').trim(),
+          cal: Number(row['熱量(kcal)'] || row['熱量'] || 0) || 0,
+          protein: Number(row['蛋白質(g)'] || row['蛋白質'] || 0) || 0,
+          carbs: Number(row['碳水(g)'] || row['碳水化合物'] || 0) || 0,
+          fat: Number(row['脂肪(g)'] || row['脂肪'] || 0) || 0,
+          notes: String(row['備註'] || '').trim(),
+          ingredients,
+          steps: stepsStr,
+          photos: []
+        };
+      }).filter(Boolean);
+
+      if (!incoming.length) { alert('找不到有效的食譜資料，請確認欄位名稱正確。'); input.value=''; return; }
+
+      const existingNames = new Set(recipes.map(r => r.name));
+      const toAdd = incoming.filter(r => !existingNames.has(r.name));
+      const toUpdate = incoming.filter(r => existingNames.has(r.name));
+
+      let proceed = true;
+      if (toUpdate.length) {
+        proceed = confirm(`找到 ${incoming.length} 道食譜：\n• ${toAdd.length} 道新食譜將新增\n• ${toUpdate.length} 道與現有食譜同名\n\n是否覆蓋同名食譜？\n（取消則只新增不覆蓋）`);
+      }
+
+      if (proceed && toUpdate.length) {
+        toUpdate.forEach(r => {
+          const idx = recipes.findIndex(x => x.name === r.name);
+          if (idx >= 0) recipes[idx] = { ...r, id: recipes[idx].id, photos: recipes[idx].photos };
+        });
+      }
+      recipes.push(...toAdd);
+      save();
+      updateCounts();
+      renderCards();
+      alert(`✅ 匯入完成！\n新增 ${toAdd.length} 道${proceed && toUpdate.length ? `，更新 ${toUpdate.length} 道` : ''}食譜。`);
+    } catch(err) {
+      alert('檔案讀取失敗，請確認格式正確。\n錯誤：' + err.message);
+    }
+    input.value = '';
+  };
+
+  if (isCsv) {
+    reader.readAsText(file, 'UTF-8');
+  } else {
+    reader.readAsArrayBuffer(file);
+  }
+}
+
 
 loadDemo();
 updateCounts();
