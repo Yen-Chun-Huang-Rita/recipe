@@ -54,6 +54,34 @@
   }
   .logo span { color: var(--terracotta-light); }
   .header-actions { display: flex; gap: 12px; align-items: center; }
+
+  .sync-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.5);
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.15);
+    transition: all 0.4s;
+    white-space: nowrap;
+  }
+  .sync-indicator.syncing { color: #f0c070; border-color: rgba(240,192,112,0.4); }
+  .sync-indicator.ok      { color: #7dd87d; border-color: rgba(125,216,125,0.4); }
+  .sync-indicator.err     { color: #ff8a80; border-color: rgba(255,138,128,0.4); }
+  .sync-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .sync-indicator.syncing .sync-dot {
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; } 50% { opacity: 0.3; }
+  }
   .btn-header-outline {
     background: transparent;
     color: var(--cream);
@@ -674,6 +702,10 @@
   <div class="header-inner">
     <div class="logo">雁君的<span>食譜</span>庫</div>
     <div class="header-actions">
+      <div class="sync-indicator" id="sync-indicator" title="雲端同步狀態">
+        <div class="sync-dot"></div>
+        <span id="sync-indicator-text">未同步</span>
+      </div>
       <button class="btn-header-outline" onclick="exportRecipes()" title="匯出食譜">⬇ 匯出</button>
       <button class="btn-header-outline" onclick="document.getElementById('import-file-input').click()" title="匯入食譜">⬆ 匯入</button>
       <input type="file" id="import-file-input" accept=".xlsx,.csv,.json" style="display:none" onchange="importRecipes(this)">
@@ -948,36 +980,22 @@
 
 <!-- SYNC MODAL -->
 <div class="modal-overlay" id="modal-sync">
-  <div class="modal" style="max-width:500px;">
+  <div class="modal" style="max-width:460px;">
     <div class="modal-header">
-      <div class="modal-title">☁ GitHub Gist 同步</div>
+      <div class="modal-title">☁ Google Sheets 雲端同步</div>
       <button class="modal-close" onclick="closeModal('modal-sync')">✕</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:0.85rem;color:var(--warm-gray);margin-bottom:20px;line-height:1.6;">
-        透過 GitHub Gist 儲存食譜資料，在任何裝置都能同步，不需要後端。
+      <p style="font-size:0.85rem;color:var(--warm-gray);margin-bottom:16px;line-height:1.6;">
+        透過 Google Sheets + Apps Script 同步食譜資料，任何裝置皆可存取。<br>
+        <span style="color:var(--terracotta);font-size:0.8rem;">注意：照片不存雲端，請用 JSON 匯出備份。</span>
       </p>
-
-      <div class="form-group" style="margin-bottom:14px;">
-        <label class="form-label">GitHub Personal Access Token</label>
-        <input class="form-input" id="sync-token" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="font-size:0.85rem;">
-        <div style="font-size:0.75rem;color:var(--warm-gray);margin-top:4px;">
-          需要 <strong>gist</strong> 權限。<a href="https://github.com/settings/tokens/new?scopes=gist&description=recipe-sync" target="_blank" style="color:var(--terracotta);">點此建立 Token</a>
-        </div>
-      </div>
-
-      <div class="form-group" style="margin-bottom:14px;">
-        <label class="form-label">Gist ID（第一次上傳後自動填入）</label>
-        <input class="form-input" id="sync-gist-id" placeholder="留空則自動建立新 Gist" style="font-size:0.85rem;">
-        <div style="font-size:0.75rem;color:var(--warm-gray);margin-top:4px;">格式：32 位英數字，例如 a1b2c3d4e5f6…</div>
-      </div>
-
-      <div id="sync-status" style="font-size:0.85rem;padding:10px 14px;border-radius:8px;display:none;margin-bottom:4px;"></div>
+      <div id="sync-status" style="font-size:0.85rem;padding:10px 14px;border-radius:8px;display:none;margin-bottom:4px;line-height:1.5;"></div>
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" onclick="closeModal('modal-sync')">關閉</button>
-      <button class="btn-secondary" onclick="syncDownload()">⬇ 從 Gist 載入</button>
-      <button class="btn-primary" onclick="syncUpload()">⬆ 上傳至 Gist</button>
+      <button class="btn-secondary" onclick="syncDownload()">⬇ 從雲端載入</button>
+      <button class="btn-primary" onclick="syncUpload()">⬆ 上傳至雲端</button>
     </div>
   </div>
 </div>
@@ -1635,95 +1653,71 @@ function doExportJson() {
   closeModal('modal-export');
 }
 
-// ── CLOUD SYNC (GitHub Gist) ────────────────────────────
-const GIST_TOKEN_KEY = 'recipe-gist-token';
-const GIST_ID_KEY    = 'recipe-gist-id';
-const GIST_FILENAME  = 'yangjun-recipes.json';
+// ── CLOUD SYNC (Google Sheets) ──────────────────────────
+const GS_URL = 'https://script.google.com/macros/s/AKfycbzlaHE2lki6YLQOu1jsWehUq0hTyOByd_xfNHHcBliIiKaHk9tDlKFuuYc5i0ySzrtzjg/exec';
 
-function openSyncModal() {
-  document.getElementById('sync-token').value   = localStorage.getItem(GIST_TOKEN_KEY) || '';
-  document.getElementById('sync-gist-id').value = localStorage.getItem(GIST_ID_KEY) || '';
-  document.getElementById('sync-status').style.display = 'none';
-  document.getElementById('modal-sync').classList.add('open');
+function setIndicator(state, text) {
+  const el  = document.getElementById('sync-indicator');
+  const txt = document.getElementById('sync-indicator-text');
+  el.className  = 'sync-indicator ' + state;
+  txt.textContent = text;
 }
 
 function setSyncStatus(msg, type) {
   const el = document.getElementById('sync-status');
-  el.textContent = msg;
+  el.innerHTML = msg;
   el.style.display = 'block';
-  el.style.background = type === 'ok'  ? '#edf7ed' : type === 'err' ? '#fdecea' : '#fdf6ec';
-  el.style.color      = type === 'ok'  ? '#2e7d32' : type === 'err' ? '#c62828' : '#666';
-  el.style.border     = `1px solid ${type === 'ok' ? '#a5d6a7' : type === 'err' ? '#ef9a9a' : '#e8ddd0'}`;
+  el.style.background = type === 'ok' ? '#edf7ed' : type === 'err' ? '#fdecea' : '#fdf6ec';
+  el.style.color      = type === 'ok' ? '#2e7d32' : type === 'err' ? '#c62828' : '#555';
+  el.style.border     = 'none';
 }
 
-function getGistCreds() {
-  const token  = document.getElementById('sync-token').value.trim();
-  const gistId = document.getElementById('sync-gist-id').value.trim();
-  if (!token) { setSyncStatus('請輸入 GitHub Token', 'err'); return null; }
-  localStorage.setItem(GIST_TOKEN_KEY, token);
-  if (gistId) localStorage.setItem(GIST_ID_KEY, gistId);
-  return { token, gistId };
+function openSyncModal() {
+  document.getElementById('sync-status').style.display = 'none';
+  document.getElementById('modal-sync').classList.add('open');
 }
 
 async function syncUpload() {
-  const creds = getGistCreds();
-  if (!creds) return;
-  setSyncStatus('上傳中…', 'info');
+  setIndicator('syncing', '同步中…');
+  setSyncStatus('上傳中，請稍候…', 'info');
   try {
-    const payload = {
-      description: '雁君的食譜庫備份',
-      public: false,
-      files: {
-        [GIST_FILENAME]: {
-          content: JSON.stringify({ version: 2, saved: new Date().toISOString(), recipes }, null, 2)
-        }
-      }
-    };
-    let res, data;
-    if (creds.gistId) {
-      // Update existing Gist
-      res = await fetch(`https://api.github.com/gists/${creds.gistId}`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${creds.token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+    const res = await fetch(GS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ recipes })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      const now = new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' });
+      setIndicator('ok', `已同步 ${now}`);
+      setSyncStatus(`✅ 上傳成功！共 ${data.count} 道食譜已同步至雲端`, 'ok');
     } else {
-      // Create new Gist
-      res = await fetch('https://api.github.com/gists', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${creds.token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-    }
-    data = await res.json();
-    if (data.id) {
-      localStorage.setItem(GIST_ID_KEY, data.id);
-      document.getElementById('sync-gist-id').value = data.id;
-      setSyncStatus(`✅ 上傳成功！共 ${recipes.length} 道食譜已儲存至 Gist (${data.id.slice(0,8)}…)`, 'ok');
-    } else {
-      setSyncStatus('❌ 上傳失敗：' + (data.message || '請確認 Token 是否有 gist 權限'), 'err');
+      setIndicator('err', '同步失敗');
+      setSyncStatus('❌ 上傳失敗：' + (data.error || '未知錯誤'), 'err');
     }
   } catch(err) {
-    setSyncStatus('❌ 連線失敗：' + err.message, 'err');
+    setIndicator('err', '連線失敗');
+    setSyncStatus('❌ 連線失敗，請確認網路或 Apps Script 部署狀態', 'err');
   }
 }
 
 async function syncDownload() {
-  const creds = getGistCreds();
-  if (!creds) return;
-  if (!creds.gistId) { setSyncStatus('請輸入 Gist ID', 'err'); return; }
-  setSyncStatus('載入中…', 'info');
+  setIndicator('syncing', '載入中…');
+  setSyncStatus('從雲端載入中，請稍候…', 'info');
   try {
-    const res = await fetch(`https://api.github.com/gists/${creds.gistId}`, {
-      headers: { Authorization: `Bearer ${creds.token}` }
-    });
+    const res = await fetch(GS_URL);
     const data = await res.json();
-    if (!data.files || !data.files[GIST_FILENAME]) {
-      setSyncStatus('❌ 找不到食譜檔案，請確認 Gist ID 是否正確', 'err'); return;
+    if (!data.ok) { 
+      setIndicator('err', '載入失敗');
+      setSyncStatus('❌ 載入失敗：' + (data.error || '未知錯誤'), 'err'); 
+      return; 
     }
-    const raw = JSON.parse(data.files[GIST_FILENAME].content);
-    const incoming = raw.recipes || [];
-    if (!incoming.length) { setSyncStatus('Gist 中目前沒有食譜資料', 'info'); return; }
+    const incoming = data.recipes || [];
+    if (!incoming.length) {
+      setIndicator('ok', '雲端無資料');
+      setSyncStatus('雲端目前沒有食譜資料', 'info'); 
+      return; 
+    }
 
     const existingNames = new Set(recipes.map(r => r.name));
     const toAdd    = incoming.filter(r => !existingNames.has(r.name));
@@ -1731,11 +1725,12 @@ async function syncDownload() {
 
     let proceed = true;
     if (toUpdate.length) {
-      proceed = confirm(`從 Gist 找到 ${incoming.length} 道食譜
+      proceed = confirm(`從雲端找到 ${incoming.length} 道食譜
 • 新增 ${toAdd.length} 道
 • ${toUpdate.length} 道同名
 
-是否覆蓋同名食譜？`);
+是否覆蓋同名食譜？
+（取消則只新增不覆蓋）`);
     }
     if (proceed && toUpdate.length) {
       toUpdate.forEach(r => {
@@ -1745,9 +1740,13 @@ async function syncDownload() {
     }
     recipes.push(...toAdd);
     save(); updateCounts(); renderCards();
-    setSyncStatus(`✅ 載入成功！新增 ${toAdd.length} 道${proceed && toUpdate.length ? `，更新 ${toUpdate.length} 道` : ''}`, 'ok');
+
+    const now = new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' });
+    setIndicator('ok', `已同步 ${now}`);
+    setSyncStatus(`✅ 載入成功！新增 ${toAdd.length} 道${proceed && toUpdate.length ? `，更新 ${toUpdate.length} 道` : ''}食譜`, 'ok');
   } catch(err) {
-    setSyncStatus('❌ 載入失敗：' + err.message, 'err');
+    setIndicator('err', '連線失敗');
+    setSyncStatus('❌ 連線失敗，請確認網路狀態', 'err');
   }
 }
 // ── IMPORT ──────────────────────────────────────────────
