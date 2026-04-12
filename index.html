@@ -702,14 +702,13 @@
   <div class="header-inner">
     <div class="logo">雁君的<span>食譜</span>庫</div>
     <div class="header-actions">
-      <div class="sync-indicator" id="sync-indicator" title="雲端同步狀態">
+      <div class="sync-indicator" id="sync-indicator" title="點擊開啟同步" onclick="openSyncModal()" style="cursor:pointer;">
         <div class="sync-dot"></div>
         <span id="sync-indicator-text">未同步</span>
       </div>
       <button class="btn-header-outline" onclick="exportRecipes()" title="匯出食譜">⬇ 匯出</button>
       <button class="btn-header-outline" onclick="document.getElementById('import-file-input').click()" title="匯入食譜">⬆ 匯入</button>
       <input type="file" id="import-file-input" accept=".xlsx,.csv,.json" style="display:none" onchange="importRecipes(this)">
-      <button class="btn-header-outline" onclick="openSyncModal()" title="雲端同步">☁ 同步</button>
       <button class="btn-primary" onclick="openAddModal()">＋ 新增食譜</button>
     </div>
   </div>
