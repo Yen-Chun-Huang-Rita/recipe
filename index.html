@@ -1887,6 +1887,33 @@ function importRecipes(input) {
 loadDemo();
 updateCounts();
 renderCards();
+
+// 自動同步：開啟頁面時從雲端載入
+(async function autoSync() {
+  setIndicator('syncing', '同步中…');
+  try {
+    const res = await fetch(GS_URL);
+    const data = await res.json();
+    if (!data.ok || !data.recipes || !data.recipes.length) {
+      setIndicator('ok', '雲端無資料');
+      return;
+    }
+    const incoming = data.recipes;
+    const existingNames = new Set(recipes.map(r => r.name));
+    const toAdd    = incoming.filter(r => !existingNames.has(r.name));
+    const toUpdate = incoming.filter(r =>  existingNames.has(r.name));
+    toUpdate.forEach(r => {
+      const idx = recipes.findIndex(x => x.name === r.name);
+      if (idx >= 0) recipes[idx] = { ...r, id: recipes[idx].id, photos: recipes[idx].photos };
+    });
+    recipes.push(...toAdd);
+    save(); updateCounts(); renderCards();
+    const now = new Date().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' });
+    setIndicator('ok', `已同步 ${now}`);
+  } catch(err) {
+    setIndicator('err', '連線失敗');
+  }
+})();
 </script>
 </body>
 </html>
